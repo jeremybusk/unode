@@ -65,7 +65,7 @@ install-nginx () {
   sudo apt install -y nginx nginx-extras luarocks gcc # optinal: lua-http
   sudo rm -f /etc/nginx/sites-enabled/default
   sudo luarocks PGSQL_INCDIR=/usr/include/postgresql/ install luasql-postgres
-  cp default.conf /etc/nginx/conf.d/
+  cp files/default.conf /etc/nginx/conf.d/
   mkdir -p /etc/nginx/lua
   cat <<EOT >> /etc/nginx/lua/config.lua
 local config = {}
@@ -128,7 +128,7 @@ enumerate(){
 
 
 install-all(){
-  if [[ "$#" -ne 3 ]]; then
+  if [[ "$#" -ne 2 ]]; then
     echo "Usage: $0 ${FUNCNAME} <adminuser> <adminpass>"
     exit 1
   fi
@@ -154,7 +154,7 @@ main() {
   fi
 
   if [ "$1" == "install-all" ]; then
-    install-all $@
+    install-all "$adminuser" "$adminpass"
   elif [ "$1" == "run-tests" ]; then
     run-tests
   else
