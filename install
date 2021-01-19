@@ -14,6 +14,26 @@ test_pgname=test_unode
 pgname=unode
 
 
+ssql(){
+  sql=$1
+  sudo -Hiu postgres psql -Atq -U postgres -d postgres -c "$sql"
+  # sudosql "select current_user"
+}
+
+
+sql(){
+  if [[ "$#" -lt 3 ]]; then
+    echo "Usage: $0 <sql> <pguser> <pgpass>"
+    exit 1
+  fi
+  sql=$3
+  pguser=$2
+  pgpass=$3
+  sudo -Hiu postgres psql -Atq -U postgres -d $db_name -c "$sql"
+  # sql "select current_user"
+}
+
+
 purge_all () {
   # apt purge '^pgadmin4.*'
   echo "Purging all"
@@ -50,10 +70,15 @@ install-postgres () {
   systemctl restart postgresql
   systemctl is-active postgresql
   systemctl is-enabled postgresql
+  sudo -u postgres psql -c "DROP DATABASE IF EXISTS $pgname"
+  
   sudo -u postgres psql -c "DROP DATABASE IF EXISTS $test_pgname"
   sudo -u postgres psql -c "DROP ROLE IF EXISTS $pgadminuser"
   sudo -u postgres psql -c "CREATE ROLE $pgadminuser WITH LOGIN SUPERUSER PASSWORD '$pgadminpass'"
   sudo -u postgres psql -c "CREATE DATABASE $test_pgname"
+  sudo -u postgres psql -c "CREATE DATABASE $pgname"
+  sudo -u postgres psql -c  "ALTER DATABASE $pgname OWNER TO $pgadminuser"
+  
 }
 
 
@@ -134,6 +159,34 @@ enumerate(){
 }
 
 
+install-pgbouncer(){
+  if [[ "$#" -ne 1 ]]; then
+    echo "Usage: $0 ${FUNCNAME} <pgadminuser>"
+    exit 1
+  fi
+  
+  sudo apti-get install -y pgbouncer
+  mv /etc/pgbouncer/pgbouncer.ini /etc/pgbouncer/pgbouncer.ini.bkp || true
+  cat <<EOT >> /etc/pgbouncer/pgbouncer.ini
+[databases]
+$pgname = dbname=$pgname host=127.0.0.1 port=5432
+[users]
+[pgbouncer]
+logfile = /var/log/postgresql/pgbouncer.log
+pidfile = /var/run/postgresql/pgbouncer.pid
+listen_addr = *
+listen_port = 44441
+unix_socket_dir = /var/run/postgresql
+auth_type = scram-sha-256
+auth_file = /etc/pgbouncer/userlist.txt
+admin_users = $1
+EOT
+
+  sudo -u postgres psql -Atq -U postgres -d postgres -c "SELECT concat('\"', usename, '\" \"', passwd, '\"') FROM pg_shadow" > /etc/pgbouncer/userlist.txt
+  systemctl restart pgbouncer
+}
+
+
 install-all(){
   if [[ "$#" -ne 2 ]]; then
     echo "Usage: $0 ${FUNCNAME} <adminuser> <adminpass>"
@@ -146,6 +199,7 @@ install-all(){
   install-postgres "$adminuser" "$adminpass"
   install-nginx "$adminuser" "$adminpass"
   install-pgadmin4 "$adminuser" "$adminpass"
+  install-pgbouncer "$adminuser"
 }
 
 
