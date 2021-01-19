@@ -42,14 +42,17 @@ install-postgres () {
   sudo apt install -y postgresql-server-dev-13 postgresql-13
   sed -i 's/md5$/scram-sha-256/g' $pghbaconf
   cp files/confd-postgresql.conf /etc/postgresql/13/main/conf.d/postgresql.conf
+  # echo "host    all             all             0.0.0.0/0            scram-sha-256" >>  $pghbaconf
+  # echo "host    all             all             ::0/0            scram-sha-256" >>  $pghbaconf
+  if ! [[ $(grep "host    all             all             all            scram-sha-256" /etc/postgresql/13/main/pg_hba.conf) ]]; then
+    echo "host    all             all             all            scram-sha-256" >>  $pghbaconf
+  fi
   systemctl restart postgresql
   systemctl is-active postgresql
   systemctl is-enabled postgresql
-  sudo -u postgres psql -c "DROP role IF EXISTS $pgadminuser; create role $pgadminuser WITH LOGIN SUPERUSER PASSWORD '$pgadminpass'"
-  # echo "host    all             all             0.0.0.0/0            scram-sha-256" >>  $pghbaconf
-  # echo "host    all             all             ::0/0            scram-sha-256" >>  $pghbaconf
-  echo "host    all             all             all            scram-sha-256" >>  $pghbaconf
   sudo -u postgres psql -c "DROP DATABASE IF EXISTS $test_pgname"
+  sudo -u postgres psql -c "DROP ROLE IF EXISTS $pgadminuser"
+  sudo -u postgres psql -c "CREATE ROLE $pgadminuser WITH LOGIN SUPERUSER PASSWORD '$pgadminpass'"
   sudo -u postgres psql -c "CREATE DATABASE $test_pgname"
 }
 
