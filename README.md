@@ -5,7 +5,6 @@ Unode Server Software
 ```
 git clone https://github.com/jeremybusk/unode-server.git
 cd unode-server
-install
 ./install install-all myadminusername myadminuserpass
 ```
 
