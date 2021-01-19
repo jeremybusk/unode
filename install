@@ -197,9 +197,9 @@ install-all(){
   adminpass=$2
   prep_host
   install-postgres "$adminuser" "$adminpass"
-  install-nginx "$adminuser" "$adminpass"
-  install-pgadmin4 "$adminuser" "$adminpass"
   install-pgbouncer "$adminuser"
+  install-pgadmin4 "$adminuser" "$adminpass"
+  install-nginx "$adminuser" "$adminpass"
 }
 
 
