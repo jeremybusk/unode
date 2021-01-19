@@ -76,10 +76,7 @@ config.pguser = "$pgadminuser"
 config.pgpass = "$pgadminpass"
 config.pgport = "5432"
 EOT
-# curl -LO https://raw.githubusercontent.com/jeremybusk/unode-server/main/files/etc/nginx/lua/health.lua
-cp files/health.lua /etc/nginx/lua/health.lua
-
-return config
+  cp files/health.lua /etc/nginx/lua/health.lua
   sudo systemctl restart nginx
   systemctl is-active nginx
   systemctl is-enabled nginx
