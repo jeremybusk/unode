@@ -70,14 +70,14 @@ install-postgres () {
   systemctl restart postgresql
   systemctl is-active postgresql
   systemctl is-enabled postgresql
-  sudo -u postgres psql -c "DROP DATABASE IF EXISTS $pgname"
+  ssql "DROP DATABASE IF EXISTS $pgname"
   
-  sudo -u postgres psql -c "DROP DATABASE IF EXISTS $test_pgname"
-  sudo -u postgres psql -c "DROP ROLE IF EXISTS $pgadminuser"
-  sudo -u postgres psql -c "CREATE ROLE $pgadminuser WITH LOGIN SUPERUSER PASSWORD '$pgadminpass'"
-  sudo -u postgres psql -c "CREATE DATABASE $test_pgname"
-  sudo -u postgres psql -c "CREATE DATABASE $pgname"
-  sudo -u postgres psql -c  "ALTER DATABASE $pgname OWNER TO $pgadminuser"
+  ssql "DROP DATABASE IF EXISTS $test_pgname"
+  ssql "DROP ROLE IF EXISTS $pgadminuser"
+  ssql "CREATE ROLE $pgadminuser WITH LOGIN SUPERUSER PASSWORD '$pgadminpass'"
+  ssql "CREATE DATABASE $test_pgname"
+  ssql "CREATE DATABASE $pgname"
+  ssql  "ALTER DATABASE $pgname OWNER TO $pgadminuser"
   
 }
 
