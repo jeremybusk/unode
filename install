@@ -1,0 +1,169 @@
+#!/usr/bin/env bash
+# Installs and configures unode server software
+set -e
+[[ -f /etc/os-release ]] && . /etc/os-release
+if [[ "$NAME" == "Ubuntu" ]] && [[ "$VERSION_ID" == "20.04" ]]; then
+  echo "E: Supported Operating System!"
+else
+  echo "E: Unsupported Operating System!"
+  exit 1
+fi
+pghbaconf="/etc/postgresql/13/main/pg_hba.conf"
+test_pgname=test_unode
+pgname=unode
+
+
+purge_all () {
+  # apt purge '^pgadmin4.*'
+  echo "Purging all"
+}
+
+
+prep_host () {
+  apt-get update -y
+  apt-get upgrade -y
+  # echo "Purging all"
+}
+
+
+install-postgres () {
+  if [[ "$#" -ne 3 ]]; then
+    echo "Usage: $0 ${FUNCNAME} <pgadminuser> <pgadminpass>"
+    exit 1
+  fi
+  pgadminuser=$1
+  pgadminpass=$2
+  echo "Installing postgres."
+  sudo apt-get install curl ca-certificates gnupg
+  curl https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+  sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+  sudo apt-get update -y
+  sudo apt install -y postgresql-server-dev-13 postgresql-13
+  sed -i 's/md5$/scram-sha-256/g' $pghbaconf
+  cp confd-postgresql.conf /etc/postgresql/13/main/conf.d/postgresql.conf
+  systemctl restart postgres
+  systemctl is-active postgresql
+  systemctl is-enabled postgresql
+  sudo -u postgres psql -c "create role $pgadminuser WITH LOGIN SUPERUSER PASSWORD '$pgadminpass'"
+  # echo "host    all             all             0.0.0.0/0            scram-sha-256" >>  $pghbaconf
+  # echo "host    all             all             ::0/0            scram-sha-256" >>  $pghbaconf
+  echo "host    all             all             all            scram-sha-256" >>  $pghbaconf
+  sudo -u postgres psql -c "CREATE DATABASE $test_pgname"
+}
+
+
+install-nginx () {
+  if [[ "$#" -ne 3 ]]; then
+    echo "Usage: $0 ${FUNCNAME} <pgadminuser> <pgadminpass>"
+    exit 1
+  fi
+  pgadminuser=$1
+  pgadminpass=$2
+  echo "Installing postgres."
+  sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/nginx-selfsigned.key -out /etc/ssl/certs/nginx-selfsigned.crt -subj "/C=US/ST=Utah/L=SLC/O=Example Corp/OU=Testing/CN=example.io"
+  sudo apt install -y nginx nginx-extras luarocks gcc # optinal: lua-http
+  sudo rm -f /etc/nginx/sites-enabled/default
+  sudo luarocks PGSQL_INCDIR=/usr/include/postgresql/ install luasql-postgres
+  cp default.conf /etc/nginx/conf.d/
+  mkdir -p /etc/nginx/lua
+  cat <<EOT >> /etc/nginx/lua/config.lua
+local config = {}
+
+config.test_pgname = "$test_pgname"
+config.pgname = "$pgname"
+config.pghost = "127.0.0.1"
+config.pguser = "$pgadminuser"
+config.pgpass = "$pgadminpass"
+config.pgport = "5432"
+EOT
+# curl -LO https://raw.githubusercontent.com/jeremybusk/unode-server/main/files/etc/nginx/lua/health.lua
+cp files/health.lua /etc/nginx/lua/health.lua
+
+return config
+  sudo systemctl restart nginx
+  systemctl is-active nginx
+  systemctl is-enabled nginx
+}
+
+
+install-pgadmin4 () {
+  if [[ "$#" -ne 3 ]]; then
+    echo "Usage: $0 ${FUNCNAME} <pgadmin4email> <pgadmin4pass>"
+    exit 1
+  fi
+  pgadmin4user=$1
+  pgadmin4pass=$2
+  echo "Install pgadmin4-web"
+  export PGADMIN_SETUP_EMAIL="${pgadmin4email}"
+  export PGADMIN_SETUP_PASSWORD="${pgadmin4_pass}"
+  curl https://www.pgadmin.org/static/packages_pgadmin_org.pub | sudo apt-key add
+  sudo sh -c 'echo "deb https://ftp.postgresql.org/pub/pgadmin/pgadmin4/apt/$(lsb_release -cs) pgadmin4 main" > /etc/apt/sources.list.d/pgadmin4.list && apt update'
+  apt install -y pgadmin4-web
+  sudo /usr/pgadmin4/bin/setup-web.sh
+  echo "login via http://localhost/pgadmin4 with username and password you setup"
+}
+
+
+pgadmin4_slient_install() {
+  if [[ ! -d "$PGADMIN_SETUP_EMAIL" ]]; then
+    export PGADMIN_SETUP_EMAIL="${pg_admin_email}"
+    export PGADMIN_SETUP_PASSWORD="${pg_admin_pwd}"
+    echo 'export PGADMIN_SETUP_EMAIL="${pg_admin_email}"' >> ~/.bashrc
+    echo 'export PGADMIN_SETUP_PASSWORD="${pg_admin_pwd}"' >> ~/.bashrc
+  fi
+  curl https://www.pgadmin.org/static/packages_pgadmin_org.pub | sudo apt-key add
+  sh -c 'echo "deb https://ftp.postgresql.org/pub/pgadmin/pgadmin4/apt/$(lsb_release -cs) pgadmin4 main" > /etc/apt/sources.list.d/pgadmin4.list && apt update'
+  apt install -y pgadmin4
+  apt install -y pgadmin4-web
+  sudo apt update
+  # silently install the below --yes indicate auto install
+  . /usr/pgadmin4/bin/setup-web.sh --yes
+}
+
+
+enumerate(){
+  echo "Function name:  ${FUNCNAME}"
+  echo "The number of positional parameter : $#"
+  echo "All parameters or arguments passed to the function: '$@'"
+  echo
+}
+
+
+install-all(){
+  if [[ "$#" -ne 3 ]]; then
+    echo "Usage: $0 ${FUNCNAME} <adminuser> <adminpass>"
+    exit 1
+  fi
+  echo "Installing all packages."
+  adminuser=$1
+  adminpass=$2
+  prep_host
+  install-postgres "$adminuser" "$adminpass"
+  install-nginx "$adminuser" "$adminpass"
+  install-pgadmin4 "$adminuser" "$adminpass"
+}
+
+
+run-tests(){
+  echo "Running tests"
+}
+
+
+main() {
+  if [[ "$#" -lt 1 ]]; then
+    echo "Usage: $0 <function>"
+    return
+  fi
+
+  if [ "$1" == "install-all" ]; then
+    install-all $@
+  elif [ "$1" == "run-tests" ]; then
+    run-tests
+  else
+    echo "E: Unsupported function!"
+    exit 1
+  fi
+}
+
+
+main $@
