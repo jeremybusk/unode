@@ -208,8 +208,12 @@ install-app() {
   appbin=/app/unode/bin
   mkdir -p $appbin 
   cp files/fw-update $appbin/
+  # chown www-data -R /app 
   cp files/unode-sudoers  /etc/sudoers.d/ 
   cp files/fw.lua /etc/nginx/lua/
+  systemctl restart nginx
+  ufw allow 22,80,443/tcp  # 44441
+  ufw enabled
 }
 
 
