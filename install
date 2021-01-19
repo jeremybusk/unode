@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Installs and configures unode server software
+# ./install install-all myusername mysecretpassword
 set -e
 [[ -f /etc/os-release ]] && . /etc/os-release
 if [[ "$NAME" == "Ubuntu" ]] && [[ "$VERSION_ID" == "20.04" ]]; then
@@ -27,7 +28,7 @@ prep_host () {
 
 
 install-postgres () {
-  if [[ "$#" -ne 3 ]]; then
+  if [[ "$#" -ne 2 ]]; then
     echo "Usage: $0 ${FUNCNAME} <pgadminuser> <pgadminpass>"
     exit 1
   fi
@@ -41,7 +42,7 @@ install-postgres () {
   sudo apt install -y postgresql-server-dev-13 postgresql-13
   sed -i 's/md5$/scram-sha-256/g' $pghbaconf
   cp files/confd-postgresql.conf /etc/postgresql/13/main/conf.d/postgresql.conf
-  systemctl restart postgres
+  systemctl restart postgresql
   systemctl is-active postgresql
   systemctl is-enabled postgresql
   sudo -u postgres psql -c "create role $pgadminuser WITH LOGIN SUPERUSER PASSWORD '$pgadminpass'"
@@ -53,7 +54,7 @@ install-postgres () {
 
 
 install-nginx () {
-  if [[ "$#" -ne 3 ]]; then
+  if [[ "$#" -ne 2 ]]; then
     echo "Usage: $0 ${FUNCNAME} <pgadminuser> <pgadminpass>"
     exit 1
   fi
