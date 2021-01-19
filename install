@@ -105,6 +105,8 @@ config.pghost = "127.0.0.1"
 config.pguser = "$pgadminuser"
 config.pgpass = "$pgadminpass"
 config.pgport = "5432"
+
+return config
 EOT
   cp files/health.lua /etc/nginx/lua/health.lua
   sudo systemctl restart nginx
@@ -165,7 +167,7 @@ install-pgbouncer(){
     exit 1
   fi
   
-  sudo apti-get install -y pgbouncer
+  sudo apt-get install -y pgbouncer
   mv /etc/pgbouncer/pgbouncer.ini /etc/pgbouncer/pgbouncer.ini.bkp || true
   cat <<EOT >> /etc/pgbouncer/pgbouncer.ini
 [databases]

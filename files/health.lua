@@ -1,7 +1,7 @@
 local config = require("/etc/nginx/lua/config")
 local driver = require "luasql.postgres"
 env = assert (driver.postgres())
-local sqlstr = "dbname=" .. config.tests_pgname .. " host=" .. config.pghost .. " port=" .. config.pgport .. " user=" .. config.pguser ..  " password=" .. config.pgpass
+local sqlstr = "dbname=" .. config.test_pgname .. " host=" .. config.pghost .. " port=" .. config.pgport .. " user=" .. config.pguser ..  " password=" .. config.pgpass
 print(sqlstr)
 con = assert (env:connect(sqlstr))
 res = con:execute"DROP TABLE people"
