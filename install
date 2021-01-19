@@ -4,7 +4,7 @@
 set -e
 [[ -f /etc/os-release ]] && . /etc/os-release
 if [[ "$NAME" == "Ubuntu" ]] && [[ "$VERSION_ID" == "20.04" ]]; then
-  echo "E: Supported Operating System!"
+  echo "I: Installing on $NAME $VERSION_ID."
 else
   echo "E: Unsupported Operating System!"
   exit 1
@@ -154,7 +154,7 @@ main() {
   fi
 
   if [ "$1" == "install-all" ]; then
-    install-all "$adminuser" "$adminpass"
+    install-all "$2" "$3"
   elif [ "$1" == "run-tests" ]; then
     run-tests
   else
