@@ -45,7 +45,6 @@ install-postgres () {
   systemctl restart postgresql
   systemctl is-active postgresql
   systemctl is-enabled postgresql
-  sudo -u postgres psql -c "create role $pgadminuser WITH LOGIN SUPERUSER PASSWORD '$pgadminpass'"
   sudo -u postgres psql -c "DROP role IF EXISTS $pgadminuser; create role $pgadminuser WITH LOGIN SUPERUSER PASSWORD '$pgadminpass'"
   # echo "host    all             all             0.0.0.0/0            scram-sha-256" >>  $pghbaconf
   # echo "host    all             all             ::0/0            scram-sha-256" >>  $pghbaconf
