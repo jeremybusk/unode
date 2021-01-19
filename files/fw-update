@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+set -e
+# date >> /tmp/lua.log
+# whoami >> /tmp/lua.log
+tcp_ports="80,443,44441,44442"
+fw_allow_ip() {
+# sudo ufw allow from $1 to any proto tcp port 44441:44442
+# sudo ufw allow from $1 to any proto tcp port 80,443,44441,44442 
+sudo ufw allow from $1 to any proto tcp port $tcp_ports 
+}
+
+fw_delete_allow_ip() {
+sudo ufw delete allow from $1 to any proto tcp port $tcp_ports 
+}
+
+test_hi(){
+whoami > /tmp/test.log
+}
+
+main() {
+if [[ "$#" -lt 1 ]]; then
+    echo "Usage: $0 <function>"
+    echo "Usage: $0 fw-allow-ip"
+    echo "Usage: $0 fw-unallow-ip"
+    return
+fi
+
+if [ "$1" == "fw-allow-ip" ]; then
+  if [[ "$#" -lt 2 ]]; then
+    echo "Usage: $0 fw-allow-ip <ipaddress>"
+    exit 1
+  fi
+  fw_allow_ip "$2"
+elif [ "$1" == "fw-delete-allow-ip" ]; then
+  if [[ "$#" -lt 2 ]]; then
+    echo "Usage: $0 fw-delete-allow-ip <ipaddress>"
+    exit 1
+  fi
+  fw_delete_allow_ip "$2"
+elif [ "$1" == "test" ]; then
+  test_hi
+else
+  echo "E: Unsupported function!"
+fi
+
+}
+
+main $@
