@@ -100,7 +100,8 @@ install-pgadmin4 () {
   apt install -y pgadmin4-web
   sudo /usr/pgadmin4/bin/setup-web.sh
   echo "login via http://localhost/pgadmin4 with username and password you setup"
-  sed 's/Listen.*/Listen 44449/g' /etc/apache2/ports.conf
+  sed -i 's/Listen.*/Listen 44449/g' /etc/apache2/ports.conf
+  sed -i 's/<VirtualHost \*:80>/<VirtualHost *:44449>/g' /etc/apache2/sites-enabled/000-default.conf
   systemctl restart apache2
 }
 
