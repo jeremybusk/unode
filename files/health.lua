@@ -1,4 +1,4 @@
-local config = require("/etc/nginx/lua/config")
+local config = require("/etc/openresty/lua/config")
 local driver = require "luasql.postgres"
 env = assert (driver.postgres())
 local sqlstr = "dbname=" .. config.test_pgname .. " host=" .. config.pghost .. " port=" .. config.pgport .. " user=" .. config.pguser ..  " password=" .. config.pgpass

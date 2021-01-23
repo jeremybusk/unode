@@ -127,10 +127,9 @@ install-openresty () {
   echo "deb http://openresty.org/package/ubuntu $(lsb_release -sc) main" \
     | sudo tee /etc/apt/sources.list.d/openresty.list
   sudo apt-get update
-  sudo apt-get -y install openresty postgresql-server-dev-13 luarocks gcc
-  # sudo systemctl restart openresty 
-  # systemctl is-active openresty 
-  sudo luarocks install luasocket luasec libssl-dev
+  sudo apt-get -y install openresty postgresql-server-dev-13 luarocks gcc || true
+  sudo systemctl restart openresty 
+  systemctl is-active openresty 
   sudo luarocks PGSQL_INCDIR=/usr/include/postgresql/ install luasql-postgres
   # sudo apt-get -y install --no-install-recommends openresty  # no openresty-opm and openresty-restydoc
   sudo opm install cdbattags/lua-resty-jwt xiangnanscu/lua-resty-query
@@ -141,7 +140,6 @@ install-openresty () {
   cp files/default.conf $openrestydir/conf.d/
   cp files/health.lua $openrestydir/lua/health.lua
   mkdir -p /etc/nginx/lua
-  mv $openrestydir/lua/config.lua $openrestydir/lua/config.lua.bkp
   cat <<EOT >> $openrestydir/lua/config.lua
 local config = {}
 
