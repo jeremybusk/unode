@@ -1,6 +1,22 @@
 local utils = {}
 
 
+function utils.pgcon()
+    local pgmoon = require("pgmoon")
+    local pg = pgmoon.new({
+        -- host = "pyroportal.pyrofex.io",
+        host = "10.64.41.6",
+        port = "5432",
+        database = "pyroportal",
+        password = "pyroportal1in",
+        ssl = true,
+        user = "pyroportal"
+    })
+    assert(pg:connect())
+    return pg
+end
+
+
 function utils.rediscon()
     local redis = require "nginx.redis"
     local rdb = redis:new()
