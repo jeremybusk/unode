@@ -23,6 +23,9 @@ curl -k https://$host/verify
 export TOKEN="MYTOKEN"
 curl http://$host:3000/todos
 curl http://$host:3000/todos -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"task": "New task"}'
+# or lets use nginx passthrough
+curl -k https://$host/api/todos
+curl -k https://$host/api/todos -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"task": "New task"}'
 ```
 
 Command-line
