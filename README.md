@@ -18,6 +18,8 @@ You should now be able to go to these pages using webclient if installed correct
 https://$host/health
 https://$host/pgadmin4/
 https://$host/get/client-ipaddr
+curl -k https://$host/sign
+curl -k https://$host/verify
 ```
 
 Command-line

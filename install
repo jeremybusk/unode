@@ -81,8 +81,6 @@ install-postgres () {
   ssql "CREATE DATABASE $test_pgname"
   ssql "CREATE DATABASE $pgname"
   ssql  "ALTER DATABASE $pgname OWNER TO $pgadminuser"
-  sudo -u postgres psql -d unode < files/api.postgrest.sql
-  
 }
 
 
@@ -137,8 +135,6 @@ install-openresty () {
   sudo apt-get update
   # sudo apt-get -y install openresty postgresql-server-dev-13 luarocks gcc libssl-dev lua-sec
   sudo apt-get -y install openresty postgresql-server-dev-13 luarocks gcc libssl-dev
-  # sudo systemctl restart openresty 
-  # systemctl is-active openresty 
   sudo luarocks install luasocket
   sudo luarocks install luasec
   sudo luarocks PGSQL_INCDIR=/usr/include/postgresql/ install luasql-postgres
@@ -251,7 +247,6 @@ install-all(){
   install-postgres "$adminuser" "$adminpass"
   install-pgbouncer "$adminuser"
   install-pgadmin4 "$adminuser" "$adminpass"
-  # install-nginx "$adminuser" "$adminpass"
   install-openresty "$adminuser" "$adminpass"
   install-postgrest
 }
@@ -267,15 +262,16 @@ install-postgrest(){
   export LC_CTYPE=C
   # read random bytes and keep only alphanumerics
   jwt_secret=$(< /dev/urandom tr -dc A-Za-z0-9 | head -c32)
+  mkdir -p /app/unode/postgrest
 
-  cat <<EOT >> /app/unode/postgrest/postgrest.conf 
+  cat <<EOT > /app/unode/postgrest/postgrest.conf 
 db-uri = "postgres://$pgrest_authenticator_user:$pgrest_authenticator_pass@localhost:5432/unode"
 db-schema = "api"
 db-anon-role = "web_anon"
 jwt-secret = "$jwt_secret"
 EOT
 
-  cat <<EOT >> /app/unode/postgrest/postgrest.conf 
+  cat <<EOT > /etc/systemd/system/postgrest.service 
 [Unit]
 Description=REST API for any Postgres database
 After=postgresql.service
@@ -287,16 +283,20 @@ ExecReload=/bin/kill -SIGUSR1 \$MAINPID
 [Install]
 WantedBy=multi-user.target
 EOT
+  sed -i "s/sedreplace_postgrest_authenticator_pass/$pgrest_authenticator_pass/g" "files/api.postgrest.sql"
+  sudo -u postgres psql -d unode < files/api.postgrest.sql
+  # cp files/postgrest.conf /app/unode/postgrest/ 
 
-  mkdir -p /app/unode/bin
-  mkdir -p /app/unode/conf
+  # mkdir -p /app/unode/bin
+  # mkdir -p /app/unode/conf
   curl -LO https://github.com/PostgREST/postgrest/releases/download/v7.0.1/postgrest-v7.0.1-linux-x64-static.tar.xz
   tar -xvf postgrest-v7.0.1-linux-x64-static.tar.xz -C /app/unode/postgrest 
-  cp files/postgrest.service /etc/systemd/system/postgrest.service 
-  # cp files/postgrest.conf /app/unode/postgrest/
+  # cp files/postgrest.service /etc/systemd/system/postgrest.service 
   systemctl enable postgrest
   systemctl daemon-reload
   systemctl start postgrest
+  systemctl is-active postgrest
+  systemctl is-enabled postgrest
 }
 
 
@@ -320,7 +320,8 @@ main() {
   fi
 
   if [ "$1" == "install-all" ]; then
-    install-all "$2" "$3"
+    # install-all $2 $3
+    install-postgrest $2 $3
   elif [ "$1" == "install-openresty" ]; then
     install-openresty $2 $3
   elif [ "$1" == "run-tests" ]; then

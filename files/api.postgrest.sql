@@ -1,6 +1,8 @@
 -- sudo -u postgres psql -d unode < api.postgrest.sql
 create role authenticator noinherit login password 'mysecretpassword';
+create role web_anon nologin;
 grant web_anon to authenticator;
+
 create schema api;
 create table api.todos (
   id serial primary key,
@@ -12,13 +14,8 @@ create table api.todos (
 insert into api.todos (task) values
   ('finish tutorial 0'), ('pat self on back');
 
-create role web_anon nologin;
-
 grant usage on schema api to web_anon;
 grant select on api.todos to web_anon;
-
-create role authenticator noinherit login password 'mysecretpassword';
-grant web_anon to authenticator;
 
 create role todo_user nologin;
 grant todo_user to authenticator;
