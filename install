@@ -81,6 +81,7 @@ install-postgres () {
   ssql "CREATE DATABASE $test_pgname"
   ssql "CREATE DATABASE $pgname"
   ssql  "ALTER DATABASE $pgname OWNER TO $pgadminuser"
+  sudo -u postgres psql -d unode < files/api.postgrest.sql
   
 }
 
@@ -121,19 +122,29 @@ EOT
 
 
 install-openresty () {
+  if [[ "$#" -ne 2 ]]; then
+    echo "Usage: $0 ${FUNCNAME} <pgadminuser> <pgadminpass>"
+    exit 1
+  fi
+  pgadminuser=$1
+  pgadminpass=$2
+  echo "Installing openresty."
   sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/nginx-selfsigned.key -out /etc/ssl/certs/nginx-selfsigned.crt -subj "/C=US/ST=Utah/L=SLC/O=Example Corp/OU=Testing/CN=example.io"
   sudo apt-get -y install --no-install-recommends wget gnupg ca-certificates
   wget -O - https://openresty.org/package/pubkey.gpg | sudo apt-key add -
   echo "deb http://openresty.org/package/ubuntu $(lsb_release -sc) main" \
     | sudo tee /etc/apt/sources.list.d/openresty.list
   sudo apt-get update
-  sudo apt-get -y install openresty postgresql-server-dev-13 luarocks gcc
+  # sudo apt-get -y install openresty postgresql-server-dev-13 luarocks gcc libssl-dev lua-sec
+  sudo apt-get -y install openresty postgresql-server-dev-13 luarocks gcc libssl-dev
   # sudo systemctl restart openresty 
   # systemctl is-active openresty 
-  sudo luarocks install luasocket luasec libssl-dev
+  sudo luarocks install luasocket
+  sudo luarocks install luasec
   sudo luarocks PGSQL_INCDIR=/usr/include/postgresql/ install luasql-postgres
   # sudo apt-get -y install --no-install-recommends openresty  # no openresty-opm and openresty-restydoc
   sudo opm install cdbattags/lua-resty-jwt xiangnanscu/lua-resty-query
+  sleep 10
   mkdir -p $openrestydir/lua
   mkdir -p $openrestydir/conf.d
   mv $openrestydir/nginx.conf $openrestydir/nginx.conf.o.bkp
@@ -141,7 +152,7 @@ install-openresty () {
   cp files/default.conf $openrestydir/conf.d/
   cp files/health.lua $openrestydir/lua/health.lua
   mkdir -p /etc/nginx/lua
-  mv $openrestydir/lua/config.lua $openrestydir/lua/config.lua.bkp
+  mv $openrestydir/lua/config.lua $openrestydir/lua/config.lua.bkp || true
   cat <<EOT >> $openrestydir/lua/config.lua
 local config = {}
 
@@ -311,7 +322,7 @@ main() {
   if [ "$1" == "install-all" ]; then
     install-all "$2" "$3"
   elif [ "$1" == "install-openresty" ]; then
-    install-openresty "$2" "$3"
+    install-openresty $2 $3
   elif [ "$1" == "run-tests" ]; then
     run-tests
   else
