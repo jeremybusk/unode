@@ -20,6 +20,9 @@ https://$host/pgadmin4/
 https://$host/get/client-ipaddr
 curl -k https://$host/sign
 curl -k https://$host/verify
+export TOKEN="MYTOKEN"
+curl http://$host:3000/todos
+curl http://$host:3000/todos -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"task": "New task"}'
 ```
 
 Command-line
