@@ -1,3 +1,16 @@
+# Universal Node
+
+“The intellect of man is forced to choose
+Perfection of the life, or of the work
+And if it take the second must refuse
+A heavenly mansion, raging in the dark.”
+
+― William Butler Yeats
+
+If you want to enjoy yourself have a BBQ or grab a brew. Perhaps get the boat and hit the lake or binge watch another show.
+We are trying to do some really hard modeling of our universe here. This will be a long process. Please join the cause.
+The only way to get out of this rats maze is to understand it. One of the best ways to understand something is to model it.
+
 # unode-server
 Unode Server Software
 
