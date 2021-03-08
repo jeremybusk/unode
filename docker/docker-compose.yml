@@ -1,0 +1,111 @@
+# version: '3.7', 3.8
+version: '3'
+
+services:
+  postgrest-db:
+    container_name: unode-db-postgres
+    image: postgres:13-alpine
+    ports:
+      - "30001:5432"
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - DB_ANON_ROLE=${DB_ANON_ROLE}
+      - DB_SCHEMA=${DB_SCHEMA}
+    volumes:
+      # anything in initdb directory is created in the database
+      # see "How to extend this image" section at https://hub.docker.com/r/_/postgres/
+      - "./db/initdb:/docker-entrypoint-initdb.d"
+      - ./db/storage/postgres:/data/postgres
+    networks:
+      - backend 
+    restart: unless-stopped
+
+  postgrest:
+    container_name: unode-db-postgrest
+    image: postgrest/postgrest:latest
+    ports:
+      - "30002:3000"
+    environment:
+      # The standard connection URI format, documented at
+      # https://www.postgresql.org/docs/current/static/libpq-connect.html#LIBPQ-CONNSTRING
+      - PGRST_DB_URI=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgrest-db:5432/${POSTGRES_DB}
+      # The name of which database schema to expose to REST clients
+      - PGRST_DB_SCHEMA=${DB_SCHEMA}
+      # The database role to use when no client authentication is provided
+      - PGRST_DB_ANON_ROLE=${DB_ANON_ROLE}
+    networks:
+      - backend 
+    restart: unless-stopped
+
+  pgadmin:
+    container_name: unode-db-pgadmin
+    image: dpage/pgadmin4
+    environment:
+        PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+        PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+    volumes:
+       - ./db/storage/pgadmin_conf:/root/.pgadmin
+       - ./db/storage/pgadmin:/var/lib/pgadmin/storage
+       - ./db/pgadmin/servers.json:/pgadmin4/servers.json
+    ports:
+      - "30003:80"
+    networks:
+      - backend 
+    restart: unless-stopped
+
+  postgrest-demo:
+    container_name: unode-postgrest-demo-html
+    image: nginx:mainline-alpine
+    ports:
+      - "30004:80"
+    volumes:
+      - "./db/html:/usr/share/nginx/html"
+    restart: unless-stopped 
+
+  unode-gui-dev:
+    build:
+      context: ./gui/dev
+      dockerfile: Dockerfile
+    hostname: unode-gui-dev
+    image: node:alpine 
+    ports:
+      - 30010:3000
+    volumes:
+      - ./gui/dev/react-app:/app
+    # command: "cd /app && npm start"
+    # networks:
+    #  - default
+    networks:
+      - backend 
+  
+  unode-gui:
+    container_name: unode-gui 
+    hostname: unode-gui
+    # image: nginx
+    # image: nginx:1.16.0-alpine 
+    image: nginx:alpine 
+    ports:
+      - "30011:80"
+      - "30012:443"
+    volumes:
+      # - ./nginx/sites-available/default:/etc/nginx/sites-available/default
+      - ./gui/conf.d:/etc/nginx/conf.d
+      - ./gui/private/nginx-selfsigned.key:/etc/ssl/private/nginx-selfsigned.key
+      - ./gui/certs/nginx-selfsigned.crt:/etc/ssl/certs/nginx-selfsigned.crt
+      - ./gui/dev/build:/usr/share/nginx/html
+      # - ./gui/react-app:/usr/share/nginx/html
+      # - ./gui/static:/app/unode/client/static
+      # - ./gui/media:/app/unode/client/media
+    networks:
+      - backend 
+   # unode-cli
+networks:
+  backend:
+    driver: bridge
+
+  # volumes:
+  #postgres:
+  # pgadmin:
+  # pgadmin_storage:
